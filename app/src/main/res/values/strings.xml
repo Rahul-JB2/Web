@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Force 5G</string>
+    <string name="title_dashboard">Dashboard</string>
+    <string name="title_force_5g">Force 5G</string>
+    <string name="title_radio_info">Radio Info</string>
+    <string name="title_speed_test">Speed Test</string>
+    <string name="title_band_guide">5G Bands</string>
+    <string name="title_dialer_codes">Secret Codes</string>
+    <string name="status_connected">Connected</string>
+    <string name="status_disconnected">Disconnected</string>
+    <string name="perm_location_title">Network Diagnostics Permission</string>
+    <string name="perm_location_desc">Access to location and phone state is required by Android to read cell tower information, 5G signal metrics (RSRP/SINR), and carrier frequency bands.</string>
+</resources>

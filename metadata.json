@@ -1,0 +1,6 @@
+{
+  "name": "Force 5G Mode",
+  "description": "Force 5G NR network mode, lock high-speed mobile bands, inspect real-time radio metrics, and test connection speeds.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
