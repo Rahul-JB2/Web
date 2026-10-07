@@ -8,6 +8,8 @@ import com.example.data.NetworkEventLog
 import com.example.model.BandDatabase
 import com.example.model.SecretCodesDatabase
 import com.example.telephony.BandCalculator
+import com.example.wifi.PasswordRiskLevel
+import com.example.wifi.WifiSecurityAuditor
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -57,11 +59,17 @@ class ExampleRobolectricTest {
   }
 
   @Test
-  fun `verify global 5g band database is populated`() {
+  fun `verify indian 5g band database is populated`() {
     assertTrue(BandDatabase.global5gBands.isNotEmpty())
     val n78 = BandDatabase.global5gBands.find { it.band == "n78" }
     assertNotNull(n78)
     assertEquals("TDD", n78?.duplex)
+    assertTrue(n78?.indianCarriers?.contains("Jio") == true)
+    assertTrue(n78?.indianCarriers?.contains("Airtel") == true)
+
+    val n28 = BandDatabase.global5gBands.find { it.band == "n28" }
+    assertNotNull(n28)
+    assertTrue(n28?.indianCarriers?.contains("Jio") == true)
   }
 
   @Test
@@ -69,6 +77,17 @@ class ExampleRobolectricTest {
     val primary = SecretCodesDatabase.codes.find { it.isPrimaryRadioInfo }
     assertNotNull(primary)
     assertEquals("*#*#4636#*#*", primary?.code)
+  }
+
+  @Test
+  fun `verify wifi password vulnerability detection`() {
+    val weakAudit = WifiSecurityAuditor.evaluatePasswordStrength("12345678")
+    assertEquals(PasswordRiskLevel.CRITICAL_WEAK, weakAudit.riskLevel)
+    assertTrue(weakAudit.isCommonWeakPassword)
+
+    val strongAudit = WifiSecurityAuditor.evaluatePasswordStrength("K#9xP@7vW!2qZ$4m")
+    assertTrue(strongAudit.riskLevel == PasswordRiskLevel.STRONG || strongAudit.riskLevel == PasswordRiskLevel.VERY_STRONG)
+    assertTrue(!strongAudit.isCommonWeakPassword)
   }
 
   @Test
@@ -80,7 +99,7 @@ class ExampleRobolectricTest {
       newNetwork = "5G NR",
       previousBand = "LTE B3",
       newBand = "5G NR n78",
-      operatorName = "Test Carrier",
+      operatorName = "Jio True 5G",
       rsrpDbm = -82,
       sinrDb = 22,
       description = "Handover to 5G n78"

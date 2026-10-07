@@ -55,17 +55,18 @@ fun BandsScreen(
     modifier: Modifier = Modifier
 ) {
     var searchQuery by remember { mutableStateOf("") }
-    var selectedCategory by remember { mutableStateOf<BandCategory?>(null) }
+    var selectedCarrier by remember { mutableStateOf<String?>("ALL") }
 
-    val filteredBands = remember(searchQuery, selectedCategory) {
+    val filteredBands = remember(searchQuery, selectedCarrier) {
         BandDatabase.global5gBands.filter { band ->
-            val matchesCategory = selectedCategory == null || band.category == selectedCategory
+            val matchesCarrier = selectedCarrier == "ALL" || band.indianCarriers.contains(selectedCarrier)
             val q = searchQuery.trim().lowercase()
             val matchesQuery = q.isEmpty() ||
                     band.band.lowercase().contains(q) ||
                     band.frequency.lowercase().contains(q) ||
-                    band.commonCarriers.lowercase().contains(q)
-            matchesCategory && matchesQuery
+                    band.commonCarriers.lowercase().contains(q) ||
+                    band.indianAllocation.lowercase().contains(q)
+            matchesCarrier && matchesQuery
         }
     }
 
@@ -74,19 +75,40 @@ fun BandsScreen(
             .fillMaxSize()
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
-        Text(
-            text = "5G BANDS",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Black,
-            letterSpacing = 1.5.sp,
-            color = Color.White
-        )
-        Text(
-            text = "Frequency Spectrum Directory",
-            fontSize = 11.sp,
-            color = Color(0x99FFFFFF),
-            fontWeight = FontWeight.Medium
-        )
+        // Header
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "INDIAN 5G BANDS",
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 1.5.sp,
+                    color = Color.White
+                )
+                Text(
+                    text = "Jio True 5G • Airtel 5G Plus • Vi 5G Spectrum",
+                    fontSize = 11.sp,
+                    color = Color(0x99FFFFFF),
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            GlassPill(
+                backgroundColor = Color(0x3300E5FF),
+                borderColor = Color(0x6600E5FF)
+            ) {
+                Text(
+                    text = "INDIA (DoT)",
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Black,
+                    color = CyanNeon
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
@@ -94,7 +116,7 @@ fun BandsScreen(
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = { Text("Search n78, carrier, freq...", fontSize = 13.sp, color = Color(0x66FFFFFF)) },
+            placeholder = { Text("Search n78, n28, Jio, Airtel, freq...", fontSize = 13.sp, color = Color(0x66FFFFFF)) },
             leadingIcon = {
                 Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = CyanNeon, modifier = Modifier.size(18.dp))
             },
@@ -120,130 +142,180 @@ fun BandsScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Filter Pills
+        // Indian Carrier Filter Chips
+        val carriers = listOf("ALL" to "All Indian Bands", "Jio" to "Jio True 5G", "Airtel" to "Airtel 5G Plus", "Vi" to "Vi 5G")
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            item {
+            items(carriers) { (carrierKey, label) ->
+                val isSelected = selectedCarrier == carrierKey
                 FilterChip(
-                    selected = selectedCategory == null,
-                    onClick = { selectedCategory = null },
-                    label = { Text("All", fontSize = 11.sp) },
+                    selected = isSelected,
+                    onClick = { selectedCarrier = carrierKey },
+                    label = { Text(label, fontSize = 11.sp, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium) },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = CyanNeon,
-                        selectedLabelColor = Color(0xFF00363D)
-                    )
-                )
-            }
-            item {
-                FilterChip(
-                    selected = selectedCategory == BandCategory.SUB_6_MID,
-                    onClick = { selectedCategory = BandCategory.SUB_6_MID },
-                    label = { Text("Mid-Band", fontSize = 11.sp) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = CyanNeon,
-                        selectedLabelColor = Color(0xFF00363D)
-                    )
-                )
-            }
-            item {
-                FilterChip(
-                    selected = selectedCategory == BandCategory.MMWAVE,
-                    onClick = { selectedCategory = BandCategory.MMWAVE },
-                    label = { Text("mmWave", fontSize = 11.sp) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MintNeon,
-                        selectedLabelColor = Color(0xFF00382E)
-                    )
-                )
-            }
-            item {
-                FilterChip(
-                    selected = selectedCategory == BandCategory.SUB_6_LOW,
-                    onClick = { selectedCategory = BandCategory.SUB_6_LOW },
-                    label = { Text("Low-Band", fontSize = 11.sp) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color(0xFF4361EE),
-                        selectedLabelColor = Color.White
-                    )
+                        selectedContainerColor = when (carrierKey) {
+                            "Jio" -> Color(0xFF0055FF)
+                            "Airtel" -> Color(0xFFEF4444)
+                            "Vi" -> Color(0xFFF59E0B)
+                            else -> CyanNeon
+                        },
+                        selectedLabelColor = Color.White,
+                        containerColor = Color(0x1AFFFFFF),
+                        labelColor = Color(0x99FFFFFF)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
+        // Band Cards List
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxSize()
         ) {
             items(filteredBands, key = { it.band }) { band ->
-                CleanGlassBandCard(band)
+                IndianGlassBandCard(band)
             }
         }
     }
 }
 
 @Composable
-private fun CleanGlassBandCard(band: FiveGBand) {
+private fun IndianGlassBandCard(band: FiveGBand) {
     val accent = when (band.category) {
         BandCategory.SUB_6_MID -> CyanNeon
         BandCategory.MMWAVE -> MintNeon
-        BandCategory.SUB_6_LOW -> Color(0xFFD6E0FF)
+        BandCategory.SUB_6_LOW -> Color(0xFF90B4FF)
     }
 
     GlassCard(
         modifier = Modifier.fillMaxWidth(),
         cornerRadius = 18.dp
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(14.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(accent.copy(alpha = 0.15f))
-                        .border(1.dp, accent.copy(alpha = 0.4f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = band.band, fontWeight = FontWeight.Black, fontSize = 13.sp, color = accent)
-                }
-                Spacer(modifier = Modifier.width(10.dp))
-                Column {
-                    Text(
-                        text = "Band ${band.band} • ${band.duplex}",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = band.frequency,
-                        fontSize = 11.sp,
-                        color = Color(0x80FFFFFF)
-                    )
-                }
-            }
+            // Top Row: Band Name + Frequency + Speed Pill
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(accent.copy(alpha = 0.15f))
+                            .border(1.2.dp, accent.copy(alpha = 0.5f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = band.band,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 14.sp,
+                            color = accent
+                        )
+                    }
 
-            Column(horizontalAlignment = Alignment.End) {
+                    Spacer(modifier = Modifier.width(10.dp))
+
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "Band ${band.band}",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            GlassPill(
+                                backgroundColor = Color(0x1AFFFFFF),
+                                borderColor = Color(0x33FFFFFF)
+                            ) {
+                                Text(
+                                    text = band.duplex,
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFD6E0FF)
+                                )
+                            }
+                        }
+                        Text(
+                            text = band.frequency,
+                            fontSize = 11.sp,
+                            color = Color(0x80FFFFFF)
+                        )
+                    }
+                }
+
                 GlassPill(
                     backgroundColor = accent.copy(alpha = 0.15f),
                     borderColor = accent.copy(alpha = 0.4f)
                 ) {
-                    Text(text = band.typicalSpeeds, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = accent)
+                    Text(
+                        text = band.typicalSpeeds,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Black,
+                        color = accent
+                    )
                 }
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = band.commonCarriers.take(18) + "...",
-                    fontSize = 9.sp,
-                    color = Color(0x66FFFFFF)
-                )
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Indian Carrier Pills Row (Jio, Airtel, Vi)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                band.indianCarriers.forEach { carrier ->
+                    val (tagBg, tagFg) = when (carrier) {
+                        "Jio" -> Pair(Color(0xFF0044CC), Color.White)
+                        "Airtel" -> Pair(Color(0xFFCC1111), Color.White)
+                        "Vi" -> Pair(Color(0xFFD97706), Color.White)
+                        else -> Pair(Color(0x33FFFFFF), Color.White)
+                    }
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(tagBg)
+                            .padding(horizontal = 7.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = carrier.uppercase(),
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Black,
+                            color = tagFg
+                        )
+                    }
+                }
+
+                if (band.indianAllocation.isNotEmpty()) {
+                    Text(
+                        text = "• ${band.indianAllocation}",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0x99FFFFFF),
+                        maxLines = 1
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = band.description,
+                fontSize = 11.sp,
+                color = Color(0x80FFFFFF),
+                lineHeight = 15.sp
+            )
         }
     }
 }
